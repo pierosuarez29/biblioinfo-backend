@@ -13,7 +13,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class AuthController extends Controller
 {
     public function login(Request $request)
-    {
+{
+    try {
         // Validar que username y password se reciban
         if (!$request->has('username') || !$request->has('password')) {
             return ApiResponseHelper::error('Faltan campos obligatorios: username y password', 422);
@@ -26,12 +27,11 @@ class AuthController extends Controller
             return ApiResponseHelper::error('Username y password no pueden estar vacíos', 422);
         }
 
-
         // 2. Buscar usuario por código (username)
-        $user = User::where('codigo', $request->username)->first();
+        $user = User::where('codigo', $username)->first();
 
         // 3. Verificar existencia del usuario y contraseña
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($password, $user->password)) {
             return ApiResponseHelper::error("Credenciales inválidas", 401);
         }
 
@@ -49,7 +49,34 @@ class AuthController extends Controller
                 'codigo'
             ])
         ], "Inicio de sesión exitoso");
+
+    } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+        // Error específico de JWT
+        \Log::error('JWT Error en login: ' . $e->getMessage(), [
+            'username' => $request->input('username'),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return ApiResponseHelper::error('Error al generar token de autenticación', 500);
+
+    } catch (\Illuminate\Database\QueryException $e) {
+        // Error de base de datos
+        \Log::error('Database Error en login: ' . $e->getMessage(), [
+            'username' => $request->input('username'),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return ApiResponseHelper::error('Error de conexión a la base de datos', 500);
+
+    } catch (\Exception $e) {
+        // Cualquier otro error
+        \Log::error('Error general en login: ' . $e->getMessage(), [
+            'username' => $request->input('username'),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        return ApiResponseHelper::error('Error interno del servidor', 500);
     }
+}
 
     public function getUser()
     {
