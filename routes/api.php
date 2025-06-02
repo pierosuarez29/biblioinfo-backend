@@ -10,7 +10,7 @@ Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::middleware('auth:api')->get('/user', [AuthController::class, 'getUser']);
 
 
-Route::get('/usuario/añadir', [AuxiliarController::class, 'añadir'])->name('añadir');
+Route::get('/usuario/añadir/{DNI}', [AuxiliarController::class, 'añadir'])->name('añadir');
 
 Route::get('/', function () {
     return "Hola Mundo";
